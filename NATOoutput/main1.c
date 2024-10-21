@@ -1,3 +1,4 @@
+// simple english to nato
 #include <stdio.h>
 #include <ctype.h>
 
