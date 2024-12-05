@@ -1,0 +1,40 @@
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <tlpi.h>
+#include "errf.h"
+
+#ifndef BUFSIZE
+#define BUFSIZE 1024
+#endif
+
+int main(int argc, char *argv[]) {
+    int infd, outfd, openflags;
+    mode_t fileperms;
+    ssize_t numread;
+    char buf[BUFSIZE];
+
+    if(argc != 3 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s old-file new-file\n", argv[0]);
+    infd = open(argv[1], O_RDONLY);
+    if(infd == -1)
+        errExit("opening file %s", argv[1]);
+
+    openflags = O_CREAT | O_WRONLY | O_TRUNC;
+    fileperms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+    outfd = open(argv[2], openflags, fileperms);
+    if(outfd == -1)
+        errExit("opening file %s", argv[2]);
+
+    while((numread = read(infd, buf, BUFSIZE)) > 0)
+        if(write(outfd, buf, numread) != numread)
+            fatal("couldn't write whole buffer");
+    if(numread == -1)
+        errExit("read");
+
+    if(close(infd) == -1)
+        errExit("close input");
+    if(close(outfd) == -1)
+        errExit("close output");
+
+    exit(EXIT_SUCCESS);
+}
