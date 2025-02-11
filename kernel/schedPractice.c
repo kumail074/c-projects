@@ -88,4 +88,12 @@ struct task_struct; // process/task descriptor
 struct user_event_nm;
 
 
+#include "/home/haider/linux-6.13.1/include/linux/sched/ext.h"
+
+/***
+  Task statement bitmask. 
+  also encoded in fs/proc/array.c: get_task_state().
+
+  We have two separate sets of flags:
+
 #endif
