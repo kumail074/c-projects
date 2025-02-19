@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
+#include <wait.h>
+#include <time.h>
+
 
 typedef enum { FALSE, TRUE } Boolean;
 
