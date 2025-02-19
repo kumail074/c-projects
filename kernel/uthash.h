@@ -175,14 +175,40 @@ do {
     HASH_FUNCTION(keyptr, keylen, hashv);
 } while (0)
 
+#define HASH_ROLLBACK_BKT(hh, head, itemptrhh) 
+do {
+    struct UT_hash_handle* hd_hh_item = itemptrhh; 
+    unsigned _hd_bkt; 
+    HASH_TO_BKT(_hd_hh_item->hashv, (head)->hh.tbl->num_buckets, _hd_bkt); 
+    (head)->hh.tbl->buckets[_hd_bkt].count++; 
+    _hd_hh_item->hh_next = NULL; 
+    _hd_hh_item->hh_prev = NULL; 
+    uthash_noexpand_fyi((head)->hh.tbl);
+} while (0)
+
 #define HASH_FIND_BYHASHVALUE(hh, head, keyptr, keylen, hashval, out)
 do {
-    out = NULL;
+    (out) = NULL;
     if (head) {
         unsigned _hf_bkt;
         HASH_TO_BKT(hashval, head->hh.tbl->num_buckets, _hf_bkt);
-        
+        if(HASH_BLOOM_TEST((head)->hh.tbl, hashval)) {
+                HASH_FIND_IN_BKT((head)->hh.tbl, hh, (head)->hh.tbl->buckets[_hf_bkt], keyptr, keylen, hashval, out);
+        }
     }
-}
+} while (0)
+
+#define HASH_FIND(hh, head, keyptr, keylen, out)
+do {
+    (out) = NULL;
+    if(head) {
+        unsigned _hf_hashv;
+        HASH_VALUE(keyptr, keylen, _hf_hashv);
+        HASH_FIND_BYHASHVALUE(hh, head, keyptr, keylen, _hf_hashv, out);
+    }
+} while (0)
+
+#ifdef HASH_BLOOM
+
 
 #endif
