@@ -97,4 +97,29 @@ do {
 
 #endif
 
+/*initial number of buckets*/
+#define HASH_INITIAL_NUM_BUCKETS 32U
+#define HASH_INITIAL_NUM_BUCKETS_LOG2 5U
+#define HASH_BKT_CAPACITY_THRESH 10U
+
+/* calculate the element whose hash handle address is hhp */
+#define ELMT_FROM_HH(tbl, hhp) ((void*)(((char*)(hhp)) - ((tbl)->hho)))
+/* 
+  ((void*)(((char*)(hhp)) - (tbl->hho))
+  {(void*)[(char*)(hhp) - (tbl->hho)]}
+*/
+
+/* calculate the hash handle from element address elp */
+#define HH_FROM_ELMT(tbl,elp) ((UT_hash_handle*)(void*)(((char*)(elp)) + ((tbl)->hho)))
+/*
+  ((UT_hash_handle*)(void*)(((char*)(elp)) + ((tbl)->hho)))
+  (char*)(elp) - (tbl->hho)
+  converts into void pointer
+  (void*)[(char*)(elp) - (tbl->hho)]
+*/
+
+
+#define HASH_ROLLBACK_BKT(hh, head, itemptrhh)
+
+
 #endif
