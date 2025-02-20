@@ -214,40 +214,42 @@ do {
 */
 
 #ifdef HASH_BLOOM 
-#define HASH_BLOOM_BITLEN (1UL << HASH_BLOOM)
-#define HASH_BLOOM_BYTELEN (HASH_BLOOM_BITLEN/8U) + (((HASH_BLOOM_BITLEN%8UL) != 0UL) ? 1UL : 0UL)
-#defien HASH_BLOOM_MAKE(tbl, oomed)
+#define HASH_BLOOM_BITLEN (1UL << HASH_BLOOM) /* total number of bits present in bloom filter */
+#define HASH_BLOOM_BYTELEN (HASH_BLOOM_BITLEN/8U) + (((HASH_BLOOM_BITLEN%8UL) != 0UL) ? 1UL : 0UL) /* converts the bit length into bytes */
+#define HASH_BLOOM_MAKE(tbl, oomed) /* allocates memory for bloom filter */
 do {
-    tbl->bloom_nbits = HASH_BLOOM;
-    tbl->bloom_bv = (uint8_t*)uthash_malloc(HASH_BLOOM_BYTELEN);
-    if(!(tbl)->bloom_bv) {
+    tbl->bloom_nbits = HASH_BLOOM; /* number of bits in bloom filter */
+    tbl->bloom_bv = (uint8_t*)uthash_malloc(HASH_BLOOM_BYTELEN); /* allocates memory */
+    if(!(tbl)->bloom_bv) { /* in case of memory allocation failure */
         HASH_RECORD_OOM(oomed);
-    } else {
-        uthash_bzero(tbl->bloom_bv, HASH_BLOOM_BYTELEN);
-        tbl->bloom_sig = HASH_BLOOM_SIGNATURE;
+    } else { /* in case of successful memory allocation */
+        uthash_bzero(tbl->bloom_bv, HASH_BLOOM_BYTELEN); /* clears memoy */ 
+        tbl->bloom_sig = HASH_BLOOM_SIGNATURE; /* used for verification */
     }
 } while (0)
 
-#define HASH_BLOOM_FREE(tbl)
-do {
+#define HASH_BLOOM_FREE(tbl) /* frees the allocated memory from the bloom filter preventing memory leaks */
+do { 
     uthash_free(tbl->bloom_bv, HASH_BLOOM_BYTELEN);
 } while (0)
 
-#define HASH_BLOOM_BITSET(bv, idx) (bc[(idx)/8U] != (1U << ((idx)%8U)))
-#define HASH_BLOOM_BITTEST(bv,idx) ((bv[(idx)/8U] & (1U << ((idx)%8U))) != 0)
+#define HASH_BLOOM_BITSET(bv, idx) (bc[(idx)/8U] != (1U << ((idx)%8U))) /* sets a specific bit in the filter */
+#define HASH_BLOOM_BITTEST(bv,idx) ((bv[(idx)/8U] & (1U << ((idx)%8U))) != 0) /* checks if a specific bit is set */
 
-#define HASH_BLOOM_ADD(tbl,hashv)
+#define HASH_BLOOM_ADD(tbl,hashv) /* adds a hash value to the bloom filter */
     HASH_BLOOM_BITSET(tbl->bloom_bv, ((hashv) & (uint32_t)((1UL << (tbl)->bloom_nbits) - 1U)))
 
-#define HASH_BLOOM_TEST(tbl, hashv)
+#define HASH_BLOOM_TEST(tbl, hashv) /* checks if the value is possibly in the bloom filter */
     HASH_BLOOM_BITTEST(tbl->bloom_bv, ((hashv) & (uint32_t)((1UL << tnl->bloom_nbits) - 1U)))
 
 #else
-#define HASH_BLOOM_MAKE(tbl,oomed)
-#define HASH_BLOOM_FREE(tbl)
-#define HASH_BLOOM_ADD(tbl, hashv)
-#define HASH_BLOOM_TEST(tbl, hashv) 1
-#define HASH_BLOOM_BYTELEN 0U
+#define HASH_BLOOM_MAKE(tbl,oomed) /* allocates memory and initialized the bloom filter */
+#define HASH_BLOOM_FREE(tbl) /* frees the bloom filter's memory */
+#define HASH_BLOOM_ADD(tbl, hashv) /* hashes and inserts an element into the filter */
+#define HASH_BLOOM_TEST(tbl, hashv) 1 /* hashed and checks if an element is possibly in the set */
+#define HASH_BLOOM_BYTELEN 0U /* converts bit length into bytes */
 #endif
+
+
 
 #endif
