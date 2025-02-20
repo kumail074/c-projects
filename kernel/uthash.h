@@ -28,16 +28,16 @@
 
 #ifdef NO_DECLTYPE
 #define DECLTYPE(X)
-#define DECLTYPE_ASSIGN(dst,src)
-do {
-    char **_da_dst = (char**)(&(dst));
-    *_da_dst = (char*)(src);
+#define DECLTYPE_ASSIGN(dst,src) 
+do { 
+    char **_da_dst = (char**)(&(dst)); 
+    *_da_dst = (char*)(src); 
 } while(0)
 #else
 #define DECLTYPE_ASSIGN(dst,src)
 do {
     dst = DECLTYPE(dst)(src);
-} while(0)
+} while (0)
 #endif
 
 #ifndef uthash_malloc
@@ -190,9 +190,9 @@ do {
 do {
     (out) = NULL;
     if (head) {
-        unsigned _hf_bkt;
-        HASH_TO_BKT(hashval, head->hh.tbl->num_buckets, _hf_bkt);
-        if(HASH_BLOOM_TEST((head)->hh.tbl, hashval)) {
+        unsigned _hf_bkt;  // bucket index
+        HASH_TO_BKT(hashval, head->hh.tbl->num_buckets, _hf_bkt); //computes which bucket the hash belongs to
+        if(HASH_BLOOM_TEST((head)->hh.tbl, hashval)) {  // performs a probabilistic check if key is present inside the bucket
                 HASH_FIND_IN_BKT((head)->hh.tbl, hh, (head)->hh.tbl->buckets[_hf_bkt], keyptr, keylen, hashval, out);
         }
     }
@@ -208,7 +208,46 @@ do {
     }
 } while (0)
 
-#ifdef HASH_BLOOM
+/*
+    BLOOM FILTER is a probabilistic data structure used to test whether an element is possibly in a set or definitely not 
+    in a set. It provides fast lookups with minimal memory usage but allows false positives (never false negatives).
+*/
 
+#ifdef HASH_BLOOM 
+#define HASH_BLOOM_BITLEN (1UL << HASH_BLOOM)
+#define HASH_BLOOM_BYTELEN (HASH_BLOOM_BITLEN/8U) + (((HASH_BLOOM_BITLEN%8UL) != 0UL) ? 1UL : 0UL)
+#defien HASH_BLOOM_MAKE(tbl, oomed)
+do {
+    tbl->bloom_nbits = HASH_BLOOM;
+    tbl->bloom_bv = (uint8_t*)uthash_malloc(HASH_BLOOM_BYTELEN);
+    if(!(tbl)->bloom_bv) {
+        HASH_RECORD_OOM(oomed);
+    } else {
+        uthash_bzero(tbl->bloom_bv, HASH_BLOOM_BYTELEN);
+        tbl->bloom_sig = HASH_BLOOM_SIGNATURE;
+    }
+} while (0)
+
+#define HASH_BLOOM_FREE(tbl)
+do {
+    uthash_free(tbl->bloom_bv, HASH_BLOOM_BYTELEN);
+} while (0)
+
+#define HASH_BLOOM_BITSET(bv, idx) (bc[(idx)/8U] != (1U << ((idx)%8U)))
+#define HASH_BLOOM_BITTEST(bv,idx) ((bv[(idx)/8U] & (1U << ((idx)%8U))) != 0)
+
+#define HASH_BLOOM_ADD(tbl,hashv)
+    HASH_BLOOM_BITSET(tbl->bloom_bv, ((hashv) & (uint32_t)((1UL << (tbl)->bloom_nbits) - 1U)))
+
+#define HASH_BLOOM_TEST(tbl, hashv)
+    HASH_BLOOM_BITTEST(tbl->bloom_bv, ((hashv) & (uint32_t)((1UL << tnl->bloom_nbits) - 1U)))
+
+#else
+#define HASH_BLOOM_MAKE(tbl,oomed)
+#define HASH_BLOOM_FREE(tbl)
+#define HASH_BLOOM_ADD(tbl, hashv)
+#define HASH_BLOOM_TEST(tbl, hashv) 1
+#define HASH_BLOOM_BYTELEN 0U
+#endif
 
 #endif
