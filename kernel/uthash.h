@@ -250,26 +250,26 @@ do {
 #define HASH_BLOOM_BYTELEN 0U /* converts bit length into bytes */
 #endif
 
-#define HASH_MAKE_TABLE(hh, head, oomed)
+#define HASH_MAKE_TABLE(hh, head, oomed) /* initializes a new hash table */
 do {
-    head->hh.tbl = (UT_hash_table*)uthash_malloc(sizeof(UT_hash_table));
-    if (!head->hh.tbl) {
+    head->hh.tbl = (UT_hash_table*)uthash_malloc(sizeof(UT_hash_table)); /* allocates memory */
+    if (!head->hh.tbl) {  /* if memory allocation fails, it records/logs the out-of-memory and skips the rest of initialization */
         HASH_RECORD_OOM(oomed);
     } else  {
-        uthash_bzero(head->hh.tbl, sizeof(UT_hash_table));
-        head->hh.tbl->tail = &(head->hh);
-        head->hh.tbl->num_buckets = HASH_INITIAL_NUM_BUCKETS;
-        head->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2;
-        head->hh.tbl->hho = (char*)(&head->hh) - (char*)head;
-        head->hh.tbl->buckets = (UT_hash_bucket*)uthash_malloc(HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));
-        head->hh.tbl->signature = HASH_SIGNATURE;
-        if(!(head->hh.tbl->signature)) {
-            HASH_RECORD_OOM(oomed);
-            uthash_free(head->hh.tbl, sizeof(UT_hash_table));
-        } else {
-            uthash_bzero(head->hh.tbl->buckets, HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_buckets));
-            HASH_BLOOM_MAKE(head->hh.tbl,oomed);
-            IF_HASH_NONFATAL_OOM(
+        uthash_bzero(head->hh.tbl, sizeof(UT_hash_table)); /* clears memory */
+        head->hh.tbl->tail = &(head->hh); 
+        head->hh.tbl->num_buckets = HASH_INITIAL_NUM_BUCKETS; /* initializes the number of buckets */
+        head->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2; /* initializes the log2 of the number of efficient bucket indexes */
+        head->hh.tbl->hho = (char*)(&head->hh) - (char*)head; /* calculates the byte offset (hho) from the start of the structure (head) to where the hash handle (hh) is located */
+        head->hh.tbl->buckets = (UT_hash_bucket*)uthash_malloc(HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket)); /* memory allocation for and array of buckets */
+        head->hh.tbl->signature = HASH_SIGNATURE; /* stored in hash table, ensure that the table structure is valid */
+        if(!(head->hh.tbl->signature)) { /* error handling in case of failed memory allocation */
+            HASH_RECORD_OOM(oomed);  /* records the out-of-memory error */
+            uthash_free(head->hh.tbl, sizeof(UT_hash_table)); /* frees the table */
+        } else { 
+            uthash_bzero(head->hh.tbl->buckets, HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_buckets)); /* bucket memory is zeroed to initialize each bucket's count and pointers */
+            HASH_BLOOM_MAKE(head->hh.tbl,oomed); /* sets up bloom filter for hash table if enabled */
+            IF_HASH_NONFATAL_OOM( /* checks non-fatal out-of-memory condition occured during bloom filter setup */
                 if(oomed) {
                     uthash_free(head->hh.tbl->buckets, HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));
                     uthash_free(head->hh.tbl, sizeof(UT_hash_table));
@@ -279,9 +279,28 @@ do {
     }
 } while (0)
 
+#define HASH_REPLACE_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, hashval, add, replaced, cmpfcn)
+do {
+    replaced = NULL;
+    HASH_FIND_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, replaced);
+    if (replaced) {
+        HASH_DELETE(hh, head, replaced);
+    }
+    HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, &(add->fieldname), keylen_in, hashval, add, cmpfcn);
+} while (0)
+
+#define HASH_REPLACE_BYHASHVALUE(hh, head, fieldname, keylen_in, hashval, add, replaced)
+do {
+    replaced = NULL;
+    HASH_FIND_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, replaced);
+    if(replaced) {
+        HASH_DELETE(hh, head, replaced);
+    }
+    HASH_ADD_KRYPTR_BTHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, add);
+} while (0)
 
 
-/*    STRUCTURES    */
+/*    IMPORTANT STRUCTURES    */
 
 typedef struct {
     struct UT_hash_handle *hh_head;
