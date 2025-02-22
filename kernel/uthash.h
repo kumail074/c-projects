@@ -314,12 +314,19 @@ do {
     HASH_REPLACE_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, _hs_hashv, add, replaced, cmpfcn);
 } while (0)
 
-#define HASH_APPEND_LIST(hh, head, add)
+/* it appends a new element to the end of the application-order linked list maintained by uthash
+   it updates both the new element's pointer and hash table's tail pointer*/
+#define HASH_APPEND_LIST(hh, head, add) 
 do {
-    add->hh.next = NULL;
-    add->hh.prev = ELMT_FROM_HH(head->hh.tbl, head->hh.tbl->tail);
-    head->hh.tbl->tail->next = add;
-    head->hh.tbl->tail = &(add->hh);
+    add->hh.next = NULL; 
+    add->hh.prev = ELMT_FROM_HH(head->hh.tbl, head->hh.tbl->tail); /* calculates the pointer to its current tail element */
+    head->hh.tbl->tail->next = add; /* updates the tail element's next pointer to the new element */
+    head->hh.tbl->tail = &(add->hh); /* hash table's tail pointer is updated to reference the new element's hash handle */
+} while (0)
+
+#define HASH_AKBI_INNER_LOOP(hh,head,add,cmpfcn)
+do {
+    
 } while (0)
 
 /*    IMPORTANT STRUCTURES    */
