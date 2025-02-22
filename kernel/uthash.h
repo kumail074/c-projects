@@ -250,6 +250,84 @@ do {
 #define HASH_BLOOM_BYTELEN 0U /* converts bit length into bytes */
 #endif
 
+#define HASH_MAKE_TABLE(hh, head, oomed)
+do {
+    head->hh.tbl = (UT_hash_table*)uthash_malloc(sizeof(UT_hash_table));
+    if (!head->hh.tbl) {
+        HASH_RECORD_OOM(oomed);
+    } else  {
+        uthash_bzero(head->hh.tbl, sizeof(UT_hash_table));
+        head->hh.tbl->tail = &(head->hh);
+        head->hh.tbl->num_buckets = HASH_INITIAL_NUM_BUCKETS;
+        head->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2;
+        head->hh.tbl->hho = (char*)(&head->hh) - (char*)head;
+        head->hh.tbl->buckets = (UT_hash_bucket*)uthash_malloc(HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));
+        head->hh.tbl->signature = HASH_SIGNATURE;
+        if(!(head->hh.tbl->signature)) {
+            HASH_RECORD_OOM(oomed);
+            uthash_free(head->hh.tbl, sizeof(UT_hash_table));
+        } else {
+            uthash_bzero(head->hh.tbl->buckets, HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_buckets));
+            HASH_BLOOM_MAKE(head->hh.tbl,oomed);
+            IF_HASH_NONFATAL_OOM(
+                if(oomed) {
+                    uthash_free(head->hh.tbl->buckets, HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));
+                    uthash_free(head->hh.tbl, sizeof(UT_hash_table));
+                }
+            )
+        }
+    }
+} while (0)
 
 
+
+/*    STRUCTURES    */
+
+typedef struct {
+    struct UT_hash_handle *hh_head;
+    unsigned count;
+
+    unsigned expand_mult;
+} UT_hash_bucket;
+
+#define HASH_SIGNATURE 0xa0111fefu
+#define HASH_BLOOM_SIGNATURE 0xb12220f9u
+
+typedef struct {
+    UT_hash_bucket *buckets;
+    unsigned num_buckets;
+    unsigned log2_num_buckets;
+    unsigned num_items;
+    struct UT_hash_htblandle *tail;
+    ptrdiff_t hho;
+
+    unsigned ideal_chain_maxlen;
+
+    unsigned nonideal_items;
+
+    unsigned nonideal_items;
+
+    unsigned ineff_expands, noexpand;
+
+    uint32_t signature;
+
+#ifdef HASH_BLOOM
+    uint32_t bloom_sig;
+    uint64_t *bloom_bv;
+    uint8_t bloom_nbits;
 #endif
+
+} UT_hash_table;
+
+typedef struct {
+    struct UT_hash_table *tbl;
+    void *prev;
+    void *next;
+    struct UT_hash_handle *hh_prev;
+    struct UT_hash_handle *hh_next;
+    const void *key;
+    unsigned keylen;
+    unsigned hashv;
+} UT_hash_handle;
+
+#endif /* UTHASH_H */
