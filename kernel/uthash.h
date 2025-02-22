@@ -279,10 +279,11 @@ do {
     }
 } while (0)
 
+/* implements the replace operation using a pre-computed hash value in sorted order using an extra comparison */
 #define HASH_REPLACE_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, hashval, add, replaced, cmpfcn)
 do {
     replaced = NULL;
-    HASH_FIND_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, replaced);
+    HASH_FIND_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, replaced); /* uses pre-computed hash value and the key to search the hash table. if found, then assigned to 'replaced' */
     if (replaced) {
         HASH_DELETE(hh, head, replaced);
     }
@@ -299,6 +300,27 @@ do {
     HASH_ADD_KRYPTR_BTHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, add);
 } while (0)
 
+#define HASH_REPLACE(hh, head, fieldname, keylen_in, add, replaced)
+do {
+    unsigned _hr_hashv;
+    HASH_VALUE(&(add->fieldname), keylen_in, _hr_hashv);
+    HASH_REPLACE_BYHASHVALUE(hh, head, fieldname, keylen_in, _hr_hashv, add, replaced);
+} while (0)
+
+#define HASH_REPLACE_INORDER(hh, head, fieldname, keylen_in, add, replaced, cmpfcn)
+do {
+    unsigned _hr_hashv;
+    HASH_VALUE(&(add->fieldname), keylen_in, _hr_hashv);
+    HASH_REPLACE_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, _hs_hashv, add, replaced, cmpfcn);
+} while (0)
+
+#define HASH_APPEND_LIST(hh, head, add)
+do {
+    add->hh.next = NULL;
+    add->hh.prev = ELMT_FROM_HH(head->hh.tbl, head->hh.tbl->tail);
+    head->hh.tbl->tail->next = add;
+    head->hh.tbl->tail = &(add->hh);
+} while (0)
 
 /*    IMPORTANT STRUCTURES    */
 
