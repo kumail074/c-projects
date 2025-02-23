@@ -403,7 +403,25 @@ do {
 
 #define HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, keyptr, keylen_in, hashval, add, cmpfcn)
 do {
-    
+    IF_HASH_NONFATAL_OOM(int _ha_oomed = 0;)
+    add->hh.hashv = hashval;
+    add->hh.key = (char*)(keyptr);
+    add->hh.keylen = (unsigned)(keylen_in);
+    if (!head) {
+        add->hh.next = NULL;
+        add->hh.prev = NULL;
+        HASH_MAKE_TABLE(hh, add, _ha_oomed);
+        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {}) 
+            head - add;
+        IF_HASH_NONFATAL_OOM()
+    } else {
+        void *_hs_iter = head;
+        add->hh.tbl = head->hh.tbl;
+        HASH_AKBI_INNER_LOOP(hh, head, add, cmpfcn);
+        if(_hs_iter) {
+            add->hh.next = _hs_iter;
+        }
+    }
 } while (0)
 
 
