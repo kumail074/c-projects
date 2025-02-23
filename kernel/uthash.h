@@ -353,7 +353,7 @@ do {
 } while (0)
 #endif /* NO_DECLTYPE */
 
-/* it is responsible for adding a new element to the hash table's internal structures while handling OOM conditions in a non-fatal way if option is enabled */
+/*  it is responsible for adding a new element to the hash table's internal structures while handling OOM conditions in a non-fatal way if option is enabled */
 #if HASH_NONFATAL_OOM /* if enabled, hash implementation supports recovering from memory allocation failures without aborting the program */
 
 /*
@@ -368,27 +368,27 @@ do {
 
 #define HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, oomed)
 do {
-    if(!oomed) {
+    if(!oomed) { /* checks if oom flag is false (i.e. no prior memory error) */
         unsigned _ha_bkt;
-        head->hh.tbl->num_items++;
-        HASH_TO_BKT(hashval, head->hh.tbl->num_backets, _ha_bkt);
-        HASH_ADD_TO_BKT(head->hh.tbl->buckets[_ha_bkt], hh, &add->hh, oomed);
-        if(oomed) {
-            HASH_ROLLBACK_BKT(hh, head, &add->hh);
-            HASH_DELETE_HH(hh, head, &add->hh);
-            add->hh.tbl = NULL;
-            uthash_nonfatal_oom(add);
-        } else {
-            HASH_BLOOM_ADD(head->hh.tbl, hashval);
-            HASH_EMIT_KEY(hh, head, keyptr, keylen_in);
+        head->hh.tbl->num_items++; /* hash table's item count */
+        HASH_TO_BKT(hashval, head->hh.tbl->num_backets, _ha_bkt); /* computes bucket index using precomputed hash value */
+        HASH_ADD_TO_BKT(head->hh.tbl->buckets[_ha_bkt], hh, &add->hh, oomed); /* element's hash handle is added to corresponding bucket. this may set the OOM flag if the internal allocation fails */
+        if(oomed) { /* if after to add an element, an OOM flag is detected */
+            HASH_ROLLBACK_BKT(hh, head, &add->hh); /* rollback the bucket count */
+            HASH_DELETE_HH(hh, head, &add->hh); /* delete the incompletely added element */
+            add->hh.tbl = NULL; /* clears the element's table pointer */
+            uthash_nonfatal_oom(add); /* call the user's non-fatal handler */
+        } else { /* succussful, if no OOM occured */
+            HASH_BLOOM_ADD(head->hh.tbl, hashval); /* hash table's bloom filter is updated with the new hash value */
+            HASH_EMIT_KEY(hh, head, keyptr, keylen_in); /* the key is emitted (for diagnostic or kety-tracking purposes) */
         }
-    } else {
-        add->hh.tbl = NULL;
-        uthash_nonfatal_oom(add);
+    } else { /* if OOM flag was set before entering */
+        add->hh.tbl = NULL; /* new element's table pointer is cleared */
+        uthash_nonfatal_oom(add); /* non-fatal OOM handler is invoked immediately */
     }
 } while (0)
-#else
-
+#else /* if HASH_NONFATAL_OOM is disabled */
+/* in this, it assumes that any allocation failure is fatal (the program will exit), steps are similar but without checking for or rolling back on OOM */
 #define HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, oomed)
 do {
     unsigned _ha_bkt;
@@ -400,6 +400,13 @@ do {
 } while (0)
 
 #endif /* HASH_NONFATAL_OOM */
+
+#define HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, keyptr, keylen_in, hashval, add, cmpfcn)
+do {
+    
+} while (0)
+
+
 
 /*    IMPORTANT STRUCTURES    */
 
