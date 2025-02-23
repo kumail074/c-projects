@@ -377,6 +377,16 @@ do {
 } while (0)
 #else
 
+#define HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, oomed)
+do {
+    unsigned _ha_bkt;
+    head->hh.tbl->num_items++;
+    HASH_TO_BKT(hashval, head->hh.tbl->num_buckets, _ha_bkt);
+    HASH_ADD_TO_BKT(head->hh.tbl->buckets[_ha_bkt], hh, &add->hh, oomed);
+    HASH_BLOOM_ADD(head->hh.tbl, hashval);
+    HASH_EMIT_KEY(hh, head, keyptr, keylen_in);
+} while (0)
+
 #endif /* HASH_NONFATAL_OOM */
 
 /*    IMPORTANT STRUCTURES    */
