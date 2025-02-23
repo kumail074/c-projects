@@ -353,7 +353,19 @@ do {
 } while (0)
 #endif /* NO_DECLTYPE */
 
-#if HASH_NONFATAL_OOM
+/* it is responsible for adding a new element to the hash table's internal structures while handling OOM conditions in a non-fatal way if option is enabled */
+#if HASH_NONFATAL_OOM /* if enabled, hash implementation supports recovering from memory allocation failures without aborting the program */
+
+/*
+    hh - name of hash handle field
+    head - pointer to the first element of the hash table
+    keyptr - pointer to the key
+    keylen_in - the length (in bytes) of the key
+    hashval - a pre-computed hash value for the key
+    add - the element being added
+    oomed - a flag that indicates an OOM condition
+*/
+
 #define HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, oomed)
 do {
     if(!oomed) {
