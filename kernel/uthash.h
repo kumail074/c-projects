@@ -378,6 +378,7 @@ do {
 #else
 
 #endif /* HASH_NONFATAL_OOM */
+
 /*    IMPORTANT STRUCTURES    */
 
 typedef struct {
