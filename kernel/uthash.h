@@ -324,11 +324,60 @@ do {
     head->hh.tbl->tail = &(add->hh); /* hash table's tail pointer is updated to reference the new element's hash handle */
 } while (0)
 
+/* its goal is to iterate through the existing ordered list using a pointer named _hs_iter until it finds the point where the 
+   new element "add" should be inserted */
 #define HASH_AKBI_INNER_LOOP(hh,head,add,cmpfcn)
 do {
-    
+    do {
+        if (cpmfcn(DECLTYPE(head)(_hs_iter), add) > 0) { /* compares the current element (converted to proper type using DECLTYPE) with the new element "add" */
+            break;  /* if it returns a positive value, it means that _hs_iter points to an element greater than "add" and thus the loop should break because "add"
+                       belongs before the current element */
+        }
+    } while ((_hs_iter = HH_FROM_ELMT(head->hh.tbl, _hs_iter)->next)); /* if condition isn't met, the inner loop continues by updating _hs_iter, HH_FROM_ELMT converts the _hs_iter to 
+                                                                          the enclosing element and accesses its next pointer advancing _hs_iter to the next element in the list */
 } while (0)
 
+#ifdef NO_DECLTYPE
+#undef HASH_AKBI_INNER_LOOP
+#define HASH_AKBI_INNER_LOOP(hh, head, add, cmpfcn)
+do {
+    char *_hs_saved_head = (char*)(head); /* the original value of head pointer is saved so it can be stored later */
+    do {  /* the inner loop repeatedly examines (pointer to by a variable _hs_iter) in the sorted list */
+        DECLTYPE_ASSIGN(head, _hs_iter); /* compiler does not support DECLTYPE, the macro uses DECLTYPE_ASSIGN to assign _hs_iter to head */
+        if (cmpfcn(head, add) > 0) { /* compares the current supplied (pointed to by head) with the new element "add" */
+            DECLTYPE_ASSIGN(head, _hs_saved_head); /* if comparison doesn't trigger break, head is restored to its original value so that the iteration can continue without losing original starting context */
+            break;
+        }
+        DECLTYPE_ASSIGN(head, _hs_saved_head);
+    } while ((_hs_iter = HH_FROM_ELMT(head->hh.tbl, _hs_iter)->next)); 
+} while (0)
+#endif /* NO_DECLTYPE */
+
+#if HASH_NONFATAL_OOM
+#define HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, oomed)
+do {
+    if(!oomed) {
+        unsigned _ha_bkt;
+        head->hh.tbl->num_items++;
+        HASH_TO_BKT(hashval, head->hh.tbl->num_backets, _ha_bkt);
+        HASH_ADD_TO_BKT(head->hh.tbl->buckets[_ha_bkt], hh, &add->hh, oomed);
+        if(oomed) {
+            HASH_ROLLBACK_BKT(hh, head, &add->hh);
+            HASH_DELETE_HH(hh, head, &add->hh);
+            add->hh.tbl = NULL;
+            uthash_nonfatal_oom(add);
+        } else {
+            HASH_BLOOM_ADD(head->hh.tbl, hashval);
+            HASH_EMIT_KEY(hh, head, keyptr, keylen_in);
+        }
+    } else {
+        add->hh.tbl = NULL;
+        uthash_nonfatal_oom(add);
+    }
+} while (0)
+#else
+
+#endif /* HASH_NONFATAL_OOM */
 /*    IMPORTANT STRUCTURES    */
 
 typedef struct {
