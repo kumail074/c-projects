@@ -412,7 +412,7 @@ do {
         add->hh.prev = NULL;
         HASH_MAKE_TABLE(hh, add, _ha_oomed);
         IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {}) 
-            head - add;
+            head = add;
         IF_HASH_NONFATAL_OOM()
     } else {
         void *_hs_iter = head;
@@ -420,8 +420,18 @@ do {
         HASH_AKBI_INNER_LOOP(hh, head, add, cmpfcn);
         if(_hs_iter) {
             add->hh.next = _hs_iter;
+            if((add->hh.prev = HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev)) {
+                HH_FROM_ELMT(head->hh.tbl, add->hh.prev)->next = add;
+            } else {
+                head = add;
+            }
+            HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev = add;
+        } else {
+            HASH_APPEND_LIST(hh, head, add);
         }
     }
+    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed);
+    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE_INORDER");
 } while (0)
 
 
