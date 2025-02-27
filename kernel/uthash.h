@@ -401,37 +401,40 @@ do {
 
 #endif /* HASH_NONFATAL_OOM */
 
+
+/* it implements an ordered (in-order) addition of a new element "add" into an existing uthash table using a pre-computed hash value */
 #define HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, keyptr, keylen_in, hashval, add, cmpfcn)
 do {
-    IF_HASH_NONFATAL_OOM(int _ha_oomed = 0;)
-    add->hh.hashv = hashval;
+    IF_HASH_NONFATAL_OOM(int _ha_oomed = 0;) /* initializes OOM tracking, if enabled */
+    add->hh.hashv = hashval;  /* new element's hash handle is initialized with pre-computed hash value, key pointer, and key length */
     add->hh.key = (char*)(keyptr);
     add->hh.keylen = (unsigned)(keylen_in);
-    if (!head) {
-        add->hh.next = NULL;
+    if (!head) {    /* if the table is null, it sets the new element's prev/next to NULL */
+        add->hh.next = NULL; 
         add->hh.prev = NULL;
-        HASH_MAKE_TABLE(hh, add, _ha_oomed);
-        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {}) 
+        HASH_MAKE_TABLE(hh, add, _ha_oomed); /* allocates and initializes the hash table structure */
+        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {}) /* if no OOM occured, sets head pointer to new element */
             head = add;
         IF_HASH_NONFATAL_OOM()
-    } else {
-        void *_hs_iter = head;
-        add->hh.tbl = head->hh.tbl;
-        HASH_AKBI_INNER_LOOP(hh, head, add, cmpfcn);
-        if(_hs_iter) {
-            add->hh.next = _hs_iter;
-            if((add->hh.prev = HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev)) {
-                HH_FROM_ELMT(head->hh.tbl, add->hh.prev)->next = add;
-            } else {
+    } else {   /* handles non-empty table (ordered insertion) */
+        void *_hs_iter = head;  /* temporary iterator */
+        add->hh.tbl = head->hh.tbl; /* new element's table pointer is set to existing table */
+        HASH_AKBI_INNER_LOOP(hh, head, add, cmpfcn); /* traverse the ordered list and locate the correct insertion point */
+        if(_hs_iter) { /* if the iterator is not NULL meaning that the successor was found */
+            add->hh.next = _hs_iter; /* new element's next pointer is set to _hs_iter */
+            if((add->hh.prev = HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev)) { /* its prev pointer is set to prev pointer of _hs_iter (obtained via HH_FROM_ELMT) */
+                HH_FROM_ELMT(head->hh.tbl, add->hh.prev)->next = add; /* if there is preceding element, the element's next pointer is updated to point to new element 
+                                                                         otherwise the new element becomes the head */
+            } else { 
                 head = add;
             }
-            HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev = add;
-        } else {
-            HASH_APPEND_LIST(hh, head, add);
+            HH_FROM_ELMT(head->hh.tbl, _hs_iter)->prev = add; /* _hs_iter's prev pointer is updated to point to the new element */
+        } else { /* if _hs_iter is NULL (meaning the new element belongs at the end) */
+            HASH_APPEND_LIST(hh, head, add); /* HASH_APPEND_LIST is used to append it */
         }
     }
-    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed);
-    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE_INORDER");
+    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed); /* updates the metadata of hash table to include the new element */
+    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE_INORDER"); /* debugging hook that checks the internal consistency of the hash table */
 } while (0)
 
 
