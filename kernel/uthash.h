@@ -436,7 +436,17 @@ do {
     HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed); /* updates the metadata of hash table to include the new element */
     HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE_INORDER"); /* debugging hook that checks the internal consistency of the hash table */
 } while (0)
+/* end of HASH_ADD_KEYPTR_BYHASHVALUE_INORDER */
 
+#define HASH_ADD_KEYPTR_INORDER(hh, head, keyptr, keylen_in, add, cmpfcn)
+do {
+    unsigned _hs_hashv;
+    HASH_VALUE(keyptr, keylen_in, _hs_hashv);
+    HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, keyptr, keylen_in, _hs_hashv, add, cmpfcn);
+} while (0)
+
+#define HASH_ADD_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, hashval, add, cmpfcn)
+    HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, &(add->fieldname), keylen_in, hashval, add, cmpfcn)
 
 
 /*    IMPORTANT STRUCTURES    */
