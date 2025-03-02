@@ -438,53 +438,63 @@ do {
 } while (0)
 /* end of HASH_ADD_KEYPTR_BYHASHVALUE_INORDER */
 
+/* add a new element "add" into the hash table in order */
 #define HASH_ADD_KEYPTR_INORDER(hh, head, keyptr, keylen_in, add, cmpfcn)
 do {
-    unsigned _hs_hashv;
-    HASH_VALUE(keyptr, keylen_in, _hs_hashv);
-    HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, keyptr, keylen_in, _hs_hashv, add, cmpfcn);
+    unsigned _hs_hashv; /* declares unsigned variable to compute hash value */
+    HASH_VALUE(keyptr, keylen_in, _hs_hashv); /* here it computes hash value */
+    HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, keyptr, keylen_in, _hs_hashv, add, cmpfcn); /* it does the actual insertion in-order */
 } while (0)
 
+/* used for in-order insertion when the key is stored in a specific field of the structure */
 #define HASH_ADD_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, hashval, add, cmpfcn)
     HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, &(add->fieldname), keylen_in, hashval, add, cmpfcn)
 
+/* used for sorted insertion when you want to use a field in your structure as the key without pre-computing the hash value */
 #define HASH_ADD_INORDER(hh, head, fieldname, keylen_in, add, cmpfcn)
     HASH_ADD_KEYPTR_INORDER(hh, head, &(add->fieldname), keylen_in, add, cmpfcn)
 
+/* core macro for adding an element when you already have a pointer to the key and pre-computed hash value
+   it handles both creating the hash table (if it doesn't exist) and appending the element */
 #define HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, keyptr, keylen_in, hashval, add)
 do {
-    IF_HASH_NONFATAL_OOM( int _ha_oomed = 0; )
-    add->hh.hashv = hashval;
+    IF_HASH_NONFATAL_OOM( int _ha_oomed = 0; ) /* checks if enabled, declares an integer _ha_oomed to track OOM status */
+    /* assigns the computed hash value, key pointer, and the key's length to new element's hash handle */
+    add->hh.hashv = hashval; 
     add->hh.key = (const void*)(keyptr);
     add->hh.keylen = (unsigned)(keylen_in);
-    if(!head) {
+    if(!head) { /* if head is null, it creates a new hash table */
         add->hh.next = NULL;
         add->hh.prev = NULL;
-        HASH_MAKE_TABLE(hh, add, _ha_oomed);
-        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {} )
-            head = add;
+        HASH_MAKE_TABLE(hh, add, _ha_oomed); /* allocate and initialize the hash table */
+        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {} ) 
+            head = add; /* if no OOM occured */
         IF_HASH_NONFATAL_OOM()
-    } else {
+    } else { /* if head is not null, it appends the new element to the hash table */
         add->hh.tbl = head->hh.tbl;
         HASH_APPEND_LIST(hh, head, add);
     }
-    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed);
-    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE");
+    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed); /* it puts new element into correct bucket */
+    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE"); /* runs the integrity check */
 } while (0)
 
+/* adds an element when you have a key pointer but not a pre-computed hash value */
 #define HASH_ADD_KEYPTR(hh, head, keyptr, keylen_in, add)
 do {
     unsigned _ha_hashv;
-    HASH_VALUE(keyptr, keylen_in, _ha_hashv);
+    HASH_VALUE(keyptr, keylen_in, _ha_hashv); /* computes the hash value and stores it in _ha_hashv */
     HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, keyptr, keylen_in, _ha_hashv, add);
 } while (0)
 
+/* adds an element when key is stored in a field of the structure and a hash value is pre-computed */
 #define HASH_ADD_BYHASHVALUE(hh, head, fieldname, keylen_in, hashval, add)
     HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, add)
 
+/* most user-friendly macro for adding an element when the key is stored in a field of the structure and you want the library to compute the hash value */
 #define HASH_ADD(hh, head, fieldname, keylen_in, add)
     HASH_ADD_KEYPTR(hh, head, &(add->fieldname), keylen_in, add)
 
+/* computes the index of bucket in which an element should be placed */
 #define HASH_TO_BKT(hashv, num_bkts, bkt)
 do {
     bkt = (hashv) & (num_bkts - 1U);
