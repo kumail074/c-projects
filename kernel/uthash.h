@@ -448,6 +448,47 @@ do {
 #define HASH_ADD_BYHASHVALUE_INORDER(hh, head, fieldname, keylen_in, hashval, add, cmpfcn)
     HASH_ADD_KEYPTR_BYHASHVALUE_INORDER(hh, head, &(add->fieldname), keylen_in, hashval, add, cmpfcn)
 
+#define HASH_ADD_INORDER(hh, head, fieldname, keylen_in, add, cmpfcn)
+    HASH_ADD_KEYPTR_INORDER(hh, head, &(add->fieldname), keylen_in, add, cmpfcn)
+
+#define HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, keyptr, keylen_in, hashval, add)
+do {
+    IF_HASH_NONFATAL_OOM( int _ha_oomed = 0; )
+    add->hh.hashv = hashval;
+    add->hh.key = (const void*)(keyptr);
+    add->hh.keylen = (unsigned)(keylen_in);
+    if(!head) {
+        add->hh.next = NULL;
+        add->hh.prev = NULL;
+        HASH_MAKE_TABLE(hh, add, _ha_oomed);
+        IF_HASH_NONFATAL_OOM( if (!_ha_oomed) {} )
+            head = add;
+        IF_HASH_NONFATAL_OOM()
+    } else {
+        add->hh.tbl = head->hh.tbl;
+        HASH_APPEND_LIST(hh, head, add);
+    }
+    HASH_ADD_TO_TABLE(hh, head, keyptr, keylen_in, hashval, add, _ha_oomed);
+    HASH_FSCK(hh, head, "HASH_ADD_KEYPTR_BYHASHVALUE");
+} while (0)
+
+#define HASH_ADD_KEYPTR(hh, head, keyptr, keylen_in, add)
+do {
+    unsigned _ha_hashv;
+    HASH_VALUE(keyptr, keylen_in, _ha_hashv);
+    HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, keyptr, keylen_in, _ha_hashv, add);
+} while (0)
+
+#define HASH_ADD_BYHASHVALUE(hh, head, fieldname, keylen_in, hashval, add)
+    HASH_ADD_KEYPTR_BYHASHVALUE(hh, head, &(add->fieldname), keylen_in, hashval, add)
+
+#define HASH_ADD(hh, head, fieldname, keylen_in, add)
+    HASH_ADD_KEYPTR(hh, head, &(add->fieldname), keylen_in, add)
+
+#define HASH_TO_BKT(hashv, num_bkts, bkt)
+do {
+    bkt = (hashv) & (num_bkts - 1U);
+} while (0)
 
 /*    IMPORTANT STRUCTURES    */
 
