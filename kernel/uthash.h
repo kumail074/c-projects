@@ -500,6 +500,57 @@ do {
     bkt = (hashv) & (num_bkts - 1U);
 } while (0)
 
+#define HASH_DELETE(hh, head, delptr)
+    HASH_DELETE_HH(hh, head, &(delptr)->hh)
+
+#define HASH_DELETE_HH(hh, head, delptrhh)
+do {
+    const struct UT_hash_handle *_hd_hh_del = delptrhh;
+    if((_hd_hh_del->prev == NULL) && (_hd_hh_del->next == NULL)) {
+        HASH_BLOOM_FREE(head->hh.tbl);
+        uthash_free(head->hh.tbl, head->hh.tbl->num_buckets*sizeof(struct UT_hash_bucket));
+        uthash_free(head->hh.tbl, sizeof(UT_hash_table));
+        head = NULL;
+    } else {
+        unsigned _hd_bkt;
+        if(_hd_hh_del == (head->hh.tbl->tail)) {
+            head->hh.tbl->tail = HH_FROM_ELMT(head->hh.tbl, _hd_hh_del->prev);
+        }
+        if(_hd_hh_del->prev != NULL) {
+            HH_FROM_ELMT(head->hh.tbl, _hd_hh_del->prev)->next = _hd_hh_del->next;
+        } else {
+            DECLTYPE_ASSIGN(head, _hd_hh_del->next);
+        }
+        if (_hd_hh_del->next != NULL) {
+            HH_FROM_ELMT(head->hh.tbl, _hd_hh_del->next)->prev = _hd_hh_del->prev;
+        }
+        HASH_TO_BKT(_hd_hh_del->hashv, head->hh.tbl->num_buckets, _hd_bkt);
+        head->hh.tbl->num_items--;
+    }
+    HASH_FSCK(hh, head, "HASH_DELETE");
+} while (0)
+
+#define HASH_FIND_STR(head, findstr, out)
+do {
+    unsigned _uthash_hfstr_keylen = (unsigned)uthash_strlen(findstr);
+    HASH_FIND(hh, head, findstr, _uthash_hfstr_keylen, out);
+} while (0)
+
+#define HASH_ADD_STR(head, strfield, add)
+do {
+    unsigned _uthash_hastr_keylen = (unsigned)uthash_strlen(add->strfield);
+    HASH_ADD(hh, head, strfield[0], _uthash_hastr_keylen, add);
+} while (0)
+
+#define HASH_REPLACE_STR(head, strfield, add, replaced)
+do {
+    unsigned _uthash_hrstr_keylen = (unsigned)uthash_strlen(add->strfield);
+    HASH_REPLACE(hh. head, strfield[0], _uthash_hrstr_keylen, add, replaced);
+} while (0)
+
+
+
+
 /*    IMPORTANT STRUCTURES    */
 
 typedef struct {
