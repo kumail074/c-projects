@@ -548,7 +548,26 @@ do {
     HASH_REPLACE(hh. head, strfield[0], _uthash_hrstr_keylen, add, replaced);
 } while (0)
 
+#define HASH_FIND_INT(head, findint, out)
+    HASH_FIND(hh, head, findint, sizeof(int), out)
 
+#define HASH_ADD_INT(head, intfield, add)
+    HASH_ADD(hh, head, intfield, sizeof(int), add)
+
+#define HASH_REPLACE_INT(head, intfield, add, replaced)
+    HASH_REPLACE(hh, head, intfield, sizeof(int), add, replaced)
+
+#define HASH_FIND_PTR(head, findptr, out)
+    HASH_FIND(hh, head, findptr, sizeof(void*), out)
+
+#define HASH_ADD_PTR(head, ptrfield, add)
+    HASH_ADD(hh, head, ptrfield, sizeof(void*), add)
+
+#define HASH_REPLACE_PTR(head, ptrfield, add, replaced)
+    HASH_REPLACE(hh, head, ptrfield, sizeof(void*), add, replaced)
+
+#define HASH_DEL(head, delptr)
+    HASH_DELETE(hh, head, delptr)
 
 
 /*    IMPORTANT STRUCTURES    */
