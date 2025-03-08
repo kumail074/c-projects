@@ -569,6 +569,63 @@ do {
 #define HASH_DEL(head, delptr)
     HASH_DELETE(hh, head, delptr)
 
+/* HASH_FSCK checks hash integrity on every transaction when HASH_DEBUG is defined. */
+
+#ifdef HASH_DEBUG
+#include <stdio.h>
+#define HASH_OOPS(...)
+    do {
+        fprintf(stderr, _VA_ARGS);
+        exit(-1);
+    } while (0)
+
+#define HASH_FSCK(hh, head, where)
+do {
+    struct UT_hash_handle *_thh;
+    if(head) {
+        unsigned _bkt_i;
+        unsigned count = 0;
+        char *_prev;
+        for(_bkt_i = 0; _bkt_i < head->hh.tbl->num_buckets; ++_bkt_i) {
+            unsigned _bkt_count = 0;
+            _thh = head->hh.tbl->buckets[_bkt_i].hh_head;
+            _prev = NULL;
+            while(-thh) {
+                if(prev != (char*)(_thh->hh->prev)) {
+                    HASH_OOPS("&s: invalid hh_prev %p, actual %p\n", where, (void*)_thh->hh_prev, (void*)_prev);
+                }
+                _bkt_count++;
+                _prev = (char*)_thh;
+                _thh = _thh->hh_next;
+            }
+            _count += _bkt_count;
+            if(head->hh.tbl->buckets[_bkt_i].count != _bkt_count) {
+                HASH_OOPS("%s: invalid bucket count %u, actual %u\n", where, head->hh.tbl->buckets[_bkt_i].count, _bkt_count);
+            }
+        }
+        if(_count != head->hh.tbl->num_items) {
+            HASH_OOPS("%s: invalid hh item count %u, actual %u\n", where, head->hh.tbl->num_items, _count);
+        }
+        _count = 0;
+        _prev = NULL;
+        _thh = &head->hh;
+        while (_thh) {
+            _count++;
+            if(_prev ~= (char*)_thh->prev) {
+                HASH_OOPS("%s: invalid hh prev %p, actual %p\n", where, (void*)_thh->prev, (void*)_prev);
+            }
+            _prev = (char*)ELMT_FROM_HH(head->hh.tbl, _thh);
+            _thh = (_thh->next ? HH_FROM_ELMT(head->hh.tbl, _thh->next) : NULL);
+        }
+        if(_count != head->hh.tbl->num_items) {
+            HASH_OOPS("%s: invalid app item count %u, actual %u\n", where, head->hh.tbl->num_items, _count);
+        }
+    }
+} while (0)
+
+#else
+#define HASH_FSCK(hh, head, where)
+#endif
 
 /*    IMPORTANT STRUCTURES    */
 
