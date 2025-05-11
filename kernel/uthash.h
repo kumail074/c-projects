@@ -627,6 +627,17 @@ do {
 #define HASH_FSCK(hh, head, where)
 #endif
 
+#ifdef HASH_EMIT_KEYS
+#define HASH_EMIT_KEYS(hh, head, keyptr, fieldlen)
+do {
+    unsigned _klen = fieldlen;
+    write(HASH_EMIT_KEYS, &_klen, sizeof(_keln));
+    write(HASH_EMIT_KEYS, keyptr, (unsigned long)fieldlen);
+} while (0)
+#else
+#define HASH_EMIT_KEY(hh, head, keyptr, fieldlen)
+#endif
+
 /*    IMPORTANT STRUCTURES    */
 
 typedef struct {
